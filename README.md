@@ -20,14 +20,16 @@ This means that it only takes a few steps to go from an empty SD card to an envi
 can provision like you would with any (debian) vagrant box:
 
 1. Download the [Raspbian Lite][raspbian] image.
-2. Plug in a SD card.
-3. `dd` your image into it.
-4. Put your SD card in your Raspberry Pi.
-5. Plug it to an ethernet cable linking to your local network.
-6. Power it up and wait a minute or two.
-7. Run `./rpi-init.sh somehostname`
-8. You can now SSH into `pi@somehostname.local` with your SSH private key!
+1. Plug in a SD card.
+1. `dd` your image into it.
+1. [Resize the second partition of the card][resize-partition] so it takes the whole space.
+1. Put your SD card in your Raspberry Pi.
+1. Plug it to an ethernet cable linking to your local network.
+1. Power it up and wait a minute or two.
+1. Run `./rpi-init.sh somehostname`
+1. You can now SSH into `pi@somehostname.local` with your SSH private key!
 
 You're now ready to provision your new environment with whatever tool you prefer.
 
+[resize-partition]: http://positon.org/resize-an-ext3-ext4-partition
 [raspbian]: https://www.raspberrypi.org/downloads/raspbian/
