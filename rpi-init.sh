@@ -11,8 +11,7 @@ SSHOPTS=(-o "StrictHostKeyChecking no" -o "UserKnownHostsFile /dev/null")
 echo "Sending your public key to your RPI. A password will only be needed this once."
 echo "Remember, it's 'raspberry'"
 
-cat ~/.ssh/id_rsa.pub | ssh pi@raspberrypi.local "${SSHOPTS[@]}" \
-    'cat > tmpkey; mkdir -p .ssh; mv tmpkey .ssh/authorized_keys; chmod 0600 .ssh/authorized_keys'
+ssh-copy-id pi@raspberrypi.local "${SSHOPTS[@]}"
 
 echo "Delete the default password"
 ssh pi@raspberrypi.local "${SSHOPTS[@]}" 'sudo passwd --delete pi'
