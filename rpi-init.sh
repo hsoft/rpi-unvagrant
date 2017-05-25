@@ -1,22 +1,60 @@
 #!/bin/sh
 
 if [ -z $1 ]; then
-    echo "You need to supply a new hostname for your rpi"
+    echo "You need to supply a path to the sd card device (ex: /dev/sdb)"
     exit 1
 fi
 
-SSHOPTS=(-o "StrictHostKeyChecking no" -o "UserKnownHostsFile /dev/null")
+if [ -z $2 ]; then
+    echo "You need to supply a path to the raspbian image file to use"
+    exit 1
+fi
 
-# First things first: wiggle your big toe. Put your public key in pi's authorized_keys
-echo "Sending your public key to your RPI. A password will only be needed this once."
-echo "Remember, it's 'raspberry'"
+if [ -z $3 ]; then
+    echo "You need to choose a hostname for your raspberry pi"
+    exit 1
+fi
 
-ssh-copy-id pi@raspberrypi.local "${SSHOPTS[@]}"
+if [ ! -f ~/.ssh/id_rsa.pub ] ; then
+    echo "You should have a ~/.ssh/id_rsa.pub file so we can provision it to the SD card"
+    exit 1
+fi
 
-echo "Delete the default password"
-ssh pi@raspberrypi.local "${SSHOPTS[@]}" 'sudo passwd --delete pi'
+TMPPATH=/tmp/rpi-unvagrant
+HOSTNAME=$3
 
-echo "Changing the hostname to $1"
-echo $1 | ssh pi@raspberrypi.local "${SSHOPTS[@]}" 'cat | sudo tee /etc/hostname; sudo hostname -F /etc/hostname; sudo systemctl restart avahi-daemon'
+echo "Writing raspbian image to SD card..."
 
-echo "Your RPI is now ready to provision at pi@${1}.local!"
+sudo dd if=$1 of=$2 bs=4M
+
+echo "Enable SSH"
+
+mkdir -p ${TMPPATH}
+sudo mount ${1}1 ${TMPPATH}
+sudo touch ${TMPPATH}/ssh
+sudo umount ${TMPPATH}
+
+echo "Provision your own ssh pubkey"
+
+sudo mount ${1}2 ${TMPPATH}
+sudo mkdir -p ${TMPPATH}/home/pi/.ssh
+sudo cp ~/.ssh/id_rsa.pub ${TMPPATH}/home/pi/.ssh/authorized_keys
+sudo chown -R 1000 ${TMPPATH}/home/pi/.ssh
+
+echo "Disabling default password for the user pi"
+
+sudo sed -i 's/pi:[^:]*:/pi:\*:/' ${TMPPATH}/etc/shadow
+
+echo "Changing the hostname to $HOSTNAME"
+echo $HOSTNAME | sudo tee ${TMPPATH}/etc/hostname
+
+echo "Updating /etc/hosts"
+sudo sed -i -e "s/raspberrypi/$HOSTNAME/" ${TMPPATH}/etc/hosts
+
+sync
+
+sudo umount ${TMPPATH}
+rmdir ${TMPPATH}
+
+echo "Your SD card is now ready!"
+echo "Boot your RPI with this card and provision it at pi@$HOSTNAME.local"
